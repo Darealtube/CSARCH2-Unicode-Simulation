@@ -18,7 +18,8 @@ $(document).ready(() => {
     // Decimal to binary
     const binary = decimal.toString(2);
 
-    return binary;
+    // Pad the binary with zeroes in case of zero padding needed for numbers like 1 (0001)
+    return binary.padStart(hex.length * 4, "0");
   };
 
   // Converts binary to hex
@@ -43,7 +44,7 @@ $(document).ready(() => {
   // Converts decimal to hexadecimal
   const cvtDecToHex = (decimal) => {
     // Decimal to Hex
-    const hex = parseInt(decimal, 16);
+    const hex = decimal.toString(16);
 
     return hex;
   };
@@ -59,6 +60,15 @@ $(document).ready(() => {
 
     // Convert back to binary
     return sum.toString(2);
+  };
+
+  // (.{2}) - Captures any two characters.
+  // (?!$) - Ensures we're not at the end of the string.
+  // /g - Makes the replacement apply to the whole string.
+  // "$1 " - Replaces the matched two characters with themselves ($1) followed by a space.
+  const addSpaceEveryNChar = (str, n) => {
+    const regex = new RegExp(`(.{${n}})(?!$)`, "g");
+    return str.replace(regex, "$1 ");
   };
 
   // Function to convert the Unicode Hexadecimal into UTF-8
@@ -80,23 +90,27 @@ $(document).ready(() => {
 
     // Convert the unicode hex to binary
     const unicodeBinary = cvtHexToBinary(hex);
+
     // Start the index of the binary to copy from the very end of the binary.
     let unicodeBinaryIndex = unicodeBinary.length - 1;
 
-    // Fill the format with binary bits by looping through each pattern on the format, and looping through each character in the format.
-    // If the character is "x", it will  be replaced with the current binary in the unicodeBinary based on the unicodeBinaryIndex.
-    format = format.map((pattern) => {
-      return pattern
-        .split("")
-        .map((char) => {
-          if (char === "x") {
-            char = unicodeBinary[unicodeBinaryIndex];
-            unicodeBinaryIndex--;
-          }
-          return char;
-        })
-        .join("");
-    });
+    // Loop through the format array and start from the last 8 bits
+    for (let i = format.length - 1; i >= 0; i--) {
+      let currentFormat = format[i].split(""); // Convert string to array
+
+      // Loop through the current bits of the format as long as we're going through x's
+      for (let j = currentFormat.length - 1; currentFormat[j] === "x"; j--) {
+        // If there's no more digits to add to the format, we just pad it with zeroes
+        if (unicodeBinaryIndex < 0) {
+          currentFormat[j] = "0";
+        } else {
+          currentFormat[j] = unicodeBinary[unicodeBinaryIndex]; // Replace current x with the last index of the unicodeBinary
+          unicodeBinaryIndex--; // Move the index
+        }
+      }
+
+      format[i] = currentFormat.join(""); // Convert array back to string
+    }
 
     // Once all x's have been filled, join all the strings in the format array.
     const binaryFormat = format.join("");
@@ -123,7 +137,13 @@ $(document).ready(() => {
     // If the unicode is within U+0000 to U+FFFF, return the hex as is
     if (inBMP) return hex;
 
-    const subtractedHex = cvtDecToHex(cvtHexToDec(hex) - cvtHexToDec("10000"));
+    // Subtract the hex by 10000
+    let subtractedHex = cvtDecToHex(cvtHexToDec(hex) - cvtHexToDec("10000"));
+
+    // Pad the hex in case it ends up having 4 digits after the subtraction
+    subtractedHex = subtractedHex.padStart(hex.length, "0");
+
+    // Convert the hex to binary
     const hexBinary = cvtHexToBinary(subtractedHex);
 
     // Add upper bits to D800 (done in binary to avoid padding errors)
@@ -138,6 +158,7 @@ $(document).ready(() => {
       cvtHexToBinary("DC00")
     );
 
+    // Combine upper and lower binary and convert to hex.
     const utf16 = cvtBinaryToHex(`${upperBinary}${lowerBinary}`);
     return utf16;
   };
@@ -150,41 +171,56 @@ $(document).ready(() => {
 
   // Submit event (when the convert-utf button is clicked), when the user submits unicode
   $("#convert-utf").click(function () {
-    const input = $("#utf-input").val().trim();
+    let input = $("#utf-input").val().trim();
     // \d means digit from 0 to 9
     // {0,5} means either 0 to 5 digit combinations of a-f, A-F, and/or 0 to 9
     // | means OR
     // {4} means exactly 4 digits required combinations of a-f, A-F, and/or 0 to 9
     const validInput = /^([\da-fA-F]{0,5}|10[\da-fA-F]{4})$/.test(input);
 
+    // If invalid, display error and do not do anything
     if (!validInput) {
       $("#input-error").text(
         "Your Unicode is invalid. Valid Unicodes range from U+0000 to U+10FFFF"
       );
+
+      // Clear the previous results
+      $("#utf8-result").text("");
+      $("#utf16-result").text("");
+      $("#utf32-result").text("");
+      return;
     }
 
+    // If empty string, make the input 0000
+    if (input === "") input = "0000";
+
+    // Clear previous error if the input is valid
+    $("#input-error").text("");
+
+    // Convert input to UTF8, UTF16, UTF32
     const utf8 = cvtToUTF8(input);
     const utf16 = cvtToUTF16(input);
     const utf32 = cvtToUTF32(input);
 
-    $("#utf8-result").text(utf8);
-    $("#utf16-result").text(utf16);
-    $("#utf32-result").text(utf32);
+    // Display the results with proper formatting
+    $("#utf8-result").text(addSpaceEveryNChar(utf8, 2));
+    $("#utf16-result").text(addSpaceEveryNChar(utf16, 4));
+    $("#utf32-result").text(addSpaceEveryNChar(utf32, 4));
   });
 
   // Copy to clipboard on-click event
-  $("#copy-button").click(function () {
-    const result = `UTF-8: ${$("#utf8-result").text()}
-    UTF-16: ${$("#utf16-result").text()}
-    UTF-32: ${$("#utf32-result").text()}`;
+  $("#copy-btn").click(function () {
+    const result = `UTF-8: ${$("#utf8-result").text()}\nUTF-16: ${$(
+      "#utf16-result"
+    ).text()}\nUTF-32: ${$("#utf32-result").text()}\n`;
 
     // Copy the text inside the text field
     navigator.clipboard
       .writeText(result)
       .then(() => {
-        $("#copy-button").text("Copied to clipboard!");
+        $("#copy-btn").text("Copied to clipboard!");
         setTimeout(() => {
-          $("#copy-button").text("Copy Result to Clipboard");
+          $("#copy-btn").text("Copy Result to Clipboard");
         }, 1000);
       })
       .catch((err) => {
