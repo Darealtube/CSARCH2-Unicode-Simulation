@@ -1,6 +1,6 @@
 /* index.css */
 
-/* General styles */
+
 body {
   font-family: Arial, sans-serif;
   background-color: #f4f4f4;
@@ -22,7 +22,6 @@ body {
   text-align: center;
 }
 
-/* Form styles */
 form {
   margin-bottom: 20px;
 }
@@ -55,13 +54,12 @@ button:hover {
   background-color: #0056b3;
 }
 
-/* Error message styles */
+
 .error-message {
   color: red;
   margin-bottom: 20px;
 }
 
-/* Result styles */
 h2 {
   margin-top: 0;
 }
