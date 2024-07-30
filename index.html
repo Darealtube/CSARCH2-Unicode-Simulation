@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
@@ -10,6 +9,20 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="./index.js"></script>
   </head>
-
-  <body></body>
+  <body>
+    <div class="container">
+      <h1>Unicode to UTF Converter</h1>
+      <form id="utf-form">
+        <label for="utf-input">Enter Unicode (Hex):</label>
+        <input type="text" id="utf-input" name="utf-input" />
+        <button type="button" id="convert-utf">Convert</button>
+      </form>
+      <div id="input-error" class="error-message"></div>
+      <h2>Results:</h2>
+      <p>UTF-8: <span id="utf8-result"></span></p>
+      <p>UTF-16: <span id="utf16-result"></span></p>
+      <p>UTF-32: <span id="utf32-result"></span></p>
+      <button type="button" id="copy-btn">Copy Result to Clipboard</button>
+    </div>
+  </body>
 </html>
