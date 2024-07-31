@@ -71,3 +71,13 @@ p {
 #copy-btn {
   margin-top: 20px;
 }
+
+#group-details {
+  margin-top: 15px;
+  font-size: 10px;
+  font-weight: bold;
+}
+
+#group-mem{
+  font-size: 10px;
+}
